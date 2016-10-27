@@ -1,0 +1,102 @@
+
+n(freq, msg) {
+    return {message: msg, frequency: freq};
+};
+
+var encounters = {
+    daytravelchance : 2,
+  daytravel: [
+    event(1, "[[3d6]] Barovian commoners"),
+    event(1, "[[1d6]] Barovian scounts"),
+    event(1, "A hunting trap"),
+    event(1, "A grave"),
+    event(1, "False trail"),
+    event(1, "[[1d4+1]] Vistani Bandits"),
+    event(1, "A skeletal rider"),
+    event(1, "A 1t[trinket]"),
+    event(1, "!extend `1d2 != 2 ?  1d4 + \" Swarm(s) of Ravens\" : \"1 Wereraven in raven form\"`"),
+    event(1, "1 Wereraven"),
+    event(1, "[[1d6]] Dire Wolves"),
+    event(1, "[[3d6]] Wolves"),
+    event(1, "[[1d4]] Berserkers"),
+    event(1, "/gmroll 1t[corpse-encounter]"),
+    event(1, "[[1d6]] werewolves in human form"),
+    event(1, "1 Druid with [[2d6]] twig blights"),
+    event(1, "[[2d4]] needle blights"),
+    event(1, "[[1d6]] scarecrows"),
+    event(1, "A revenant")
+    ],
+    nighttravelchance: 5,
+  nighttravel: [
+    event(1, "A ghost"),
+    event(1, "A hunting trap"),
+    event(1, "A grave"),
+    event(1, "/gmroll 1t[trinket]"),
+    event(1, "/gmroll 1t[corpse-encounter]"),
+    event(1, "A hidden bundle of Wereraven clothes"),
+    event(1, "A Skeletal Rider"),
+    event(1, "[[1d8]] Swarm(s) of bats"),
+    event(1, "[[1d6]] Dire Wolves"),
+    event(1, "[[3d6]] Wolves"),
+    event(1, "[[1d4]] Berserkers"),
+    event(1, "[[1d6]] werewolves in wolf form"),
+    event(1, "1 Druid with [[2d6]] twig blights"),
+    event(1, "[[2d4]] needle blights"),
+    event(1, "[[1d6]] scarecrows"),
+    event(1, "A revenant"),
+    event(1, "A will-o'-wisp"),
+    event(1, "[[1d8]] Strahd Zombies"),
+    event(1, "[[3d6]] zombies")
+  ]
+};
+
+//  whisper stuff to the GM>
+var say = function(msg) {
+    if(msg.startsWith("/") || msg.startsWith("!")){
+        sendChat("Table", msg);
+    }else{
+        sendChat("Table", "/w gm " + msg);
+    }
+    };
+
+// Pick a random event from an array of events, respecting the weights
+// of the events.
+var resolve = function(table) {
+    var total = 0;
+    for (i in table) {
+        total += table[i].frequency;
+    }
+    var roll = randomInteger(total);
+    log("total is " + total + " roll " + roll);
+    for (i in table) {
+        roll -= table[i].frequency;
+        if (roll <= 0) {
+            return table[i].message;
+        }
+    }
+    return "something bad happened";
+};
+      
+on("chat:message", function(msg) {
+    if (msg.type != "api" || msg.content.indexOf("!enc-") !== 0) {
+        return;
+    }
+    
+    var loc = msg.content.replace("!enc-", "");
+    if (!(loc in encounters)) {
+        var choices = [];
+        for (var c in encounters) {
+            choices.push("!enc-" + c);
+        }
+        say("Couldn't find " + loc + ". Try: " + choices);
+        return;
+    }
+    var roll = randomInteger(20);
+    var encChance = encounters[loc+"chance"];
+    if((20-encChance) <= roll){
+        var result = resolve(encounters[loc]);
+    }else{
+        var result = roll + " vs " + (20-encChance) +": No encounter.";
+    }
+    say(result);
+});
